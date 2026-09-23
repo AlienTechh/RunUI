@@ -7,7 +7,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="theme-color" content="#00000000"/>
-  <title>RunUI Emulator</title>
+  <title>Fluid Mobile UI</title>
+
+  <!-- Web Manifest for pure native standalone launcher fullscreen -->
+  <link rel="manifest" href="data:application/manifest+json,{
+    %22name%22:%22FluidUI%22,
+    %22short_name%22:%22FluidUI%22,
+    %22start_url%22:%22.%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%2308090c%22,
+    %22theme_color%22:%22%2308090c%22
+  }">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * {
@@ -16,7 +27,7 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: transparent !important;
       touch-action: manipulation;
       border-radius: 0px !important;
     }
@@ -34,7 +45,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
     }
 
     .viewport {
@@ -47,14 +58,11 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
     }
 
     @media (max-width: 480px) {
       .viewport {
         max-width: 100vw;
-        height: 100vh;
-        height: 100dvh;
       }
     }
 
@@ -65,17 +73,7 @@
       z-index: 1;
     }
 
-    .bg-glow {
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0,0,0,0) 70%);
-      top: 10%;
-      left: 10%;
-      pointer-events: none;
-      z-index: 2;
-    }
-
+    /* Status Bar */
     .status-bar {
       height: calc(36px + env(safe-area-inset-top, 0px));
       padding-top: env(safe-area-inset-top, 0px);
@@ -87,10 +85,8 @@
       color: #f1f5f9;
       font-size: 13px;
       font-weight: 600;
-      letter-spacing: 0.3px;
       z-index: 50;
       background: transparent;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .home-screen {
@@ -100,22 +96,23 @@
       padding: 36px 24px calc(40px + env(safe-area-inset-bottom, 0px)) 24px;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      grid-auto-rows: max-content;
       gap: 28px 20px;
       align-content: start;
     }
 
+    /* Enhanced Touch Targets */
     .app-icon {
       display: flex;
       flex-direction: column;
       align-items: center;
       cursor: pointer;
-      transition: transform 0.1s ease, opacity 0.1s ease;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      touch-action: none;
     }
 
     .app-icon:active {
-      transform: scale(0.92);
-      opacity: 0.85;
+      transform: scale(0.85);
+      opacity: 0.7;
     }
 
     .icon-box {
@@ -134,10 +131,10 @@
       font-weight: 500;
       margin-top: 8px;
       text-align: center;
-      letter-spacing: 0.2px;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
 
+    /* Slow & Fluid App Launching Animation */
     .app-container {
       position: absolute;
       inset: 0;
@@ -147,11 +144,12 @@
       flex-direction: column;
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.2);
-      transform-origin: center center;
-      transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
-                  opacity 0.15s linear,
-                  visibility 0.2s linear;
+      transform: scale(0.25);
+      transform-origin: center center !important;
+      /* Slow, fluid spring transition timing */
+      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.45s ease-out,
+                  visibility 0.65s ease;
       will-change: transform, opacity;
       padding-top: env(safe-area-inset-top, 0px);
     }
@@ -171,13 +169,6 @@
       align-items: flex-end;
     }
 
-    .app-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #f8fafc;
-      letter-spacing: -0.5px;
-    }
-
     .settings-content {
       flex: 1;
       overflow-y: auto;
@@ -190,51 +181,17 @@
       margin-bottom: 24px;
     }
 
-    .group-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
-      margin: 0 0 8px 4px;
-    }
-
     .setting-row {
       padding: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #202330;
+      transition: background-color 0.2s ease;
     }
 
-    .setting-row:last-child {
-      border-bottom: none;
-    }
-
-    .setting-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .setting-icon {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #fff;
-    }
-
-    .setting-text {
-      font-size: 14px;
-      font-weight: 500;
-      color: #e2e8f0;
-    }
-
-    .setting-value {
-      font-size: 13px;
-      color: #94a3b8;
+    .setting-row:active {
+      background-color: rgba(255, 255, 255, 0.05);
     }
 
     .toggle {
@@ -243,7 +200,7 @@
       background: #334155;
       position: relative;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toggle.active {
@@ -257,37 +214,39 @@
       position: absolute;
       top: 3px;
       left: 3px;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toggle.active .toggle-knob {
       transform: translateX(20px);
     }
 
+    /* Interactive Swipe Home Bar */
     .home-indicator-area {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: calc(40px + env(safe-area-inset-bottom, 0px));
+      height: calc(44px + env(safe-area-inset-bottom, 0px));
       z-index: 100;
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       cursor: pointer;
       touch-action: none;
     }
 
     .home-indicator-line {
       width: 140px;
-      height: 4px;
-      background-color: rgba(255, 255, 255, 0.75);
-      transition: background-color 0.2s ease, transform 0.15s ease;
+      height: 5px;
+      background-color: rgba(255, 255, 255, 0.7);
+      transition: background-color 0.2s ease, transform 0.2s ease;
     }
 
-    .home-indicator-area:hover .home-indicator-line {
-      background-color: rgba(255, 255, 255, 0.95);
+    .home-indicator-area:active .home-indicator-line {
+      transform: scaleX(1.1);
+      background-color: #ffffff;
     }
   </style>
 </head>
@@ -296,22 +255,14 @@
   <div class="viewport" id="viewport">
     
     <div class="wallpaper"></div>
-    <div class="bg-glow"></div>
 
-    <!-- Status Bar -->
     <div class="status-bar">
       <span id="systemClock">12:00</span>
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] tracking-wider text-indigo-400 font-bold uppercase">RunUI</span>
-        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-          <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.3c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.22 19.57 10.57 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>
-        </svg>
-      </div>
+      <span class="text-[10px] tracking-wider text-indigo-400 font-bold uppercase">Fluid Engine</span>
     </div>
 
     <div class="home-screen">
-      <!-- Settings App Icon -->
-      <div class="app-icon" id="settingsIcon" onclick="openApp('settingsApp', event)">
+      <div class="app-icon" id="settingsIcon">
         <div class="icon-box" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
           <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
             <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/>
@@ -319,105 +270,35 @@
         </div>
         <span class="app-label">Settings</span>
       </div>
-
-      <!-- Additional Demo Apps -->
-      <div class="app-icon" onclick="showNotice('Files app coming soon!')">
-        <div class="icon-box" style="background: linear-gradient(135deg, #10b981, #047857);">
-          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
-            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
-          </svg>
-        </div>
-        <span class="app-label">Files</span>
-      </div>
-
-      <div class="app-icon" onclick="showNotice('Terminal coming soon!')">
-        <div class="icon-box" style="background: linear-gradient(135deg, #64748b, #334155);">
-          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
-            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-14-9l4 4-4 4 1.41 1.41L12.83 13l-5.42-5.41L6 9zm6 7h6v2h-6z"/>
-          </svg>
-        </div>
-        <span class="app-label">Terminal</span>
-      </div>
     </div>
 
+    <!-- App View Container -->
     <div class="app-container" id="settingsApp">
       <div class="app-header">
         <div>
           <span class="text-xs uppercase tracking-wider text-indigo-400 font-bold block mb-1">System Application</span>
-          <h1 class="app-title">Settings</h1>
+          <h1 class="text-2xl font-bold text-slate-100">Settings</h1>
         </div>
-        <span class="text-xs text-slate-500 font-mono">v1.0.4</span>
       </div>
 
       <div class="settings-content">
-        <p class="group-title">Connectivity</p>
         <div class="settings-group">
           <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-icon bg-indigo-600">
-                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.8c3.67 0 7.02 1.38 9.58 3.65L12 20.3 2.42 11.45C4.98 9.18 8.33 7.8 12 7.8z"/></svg>
-              </div>
-              <span class="setting-text">Wi-Fi Network</span>
-            </div>
-            <span class="setting-value">RunUI-HyperNet</span>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-icon bg-blue-600">
-                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
-              </div>
-              <span class="setting-text">Bluetooth</span>
-            </div>
-            <div class="toggle active" onclick="toggleSwitch(this)">
+            <span class="text-sm text-slate-200">Fluid Mode</span>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
               <div class="toggle-knob"></div>
             </div>
           </div>
-        </div>
-
-        <p class="group-title">Preferences</p>
-        <div class="settings-group">
           <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-icon bg-amber-600">
-                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
-              </div>
-              <span class="setting-text">Dark Theme</span>
-            </div>
-            <div class="toggle active" onclick="toggleSwitch(this)">
+            <span class="text-sm text-slate-200">Haptic Tap Feedback</span>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
               <div class="toggle-knob"></div>
             </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-icon bg-purple-600">
-                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-              </div>
-              <span class="setting-text">Notifications</span>
-            </div>
-            <div class="toggle" onclick="toggleSwitch(this)">
-              <div class="toggle-knob"></div>
-            </div>
-          </div>
-        </div>
-
-        <p class="group-title">System</p>
-        <div class="settings-group">
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-icon bg-emerald-600">
-                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-              </div>
-              <span class="setting-text">About RunUI</span>
-            </div>
-            <span class="setting-value">v1.0.0-fullscreen</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Home Indicator Line -->
     <div class="home-indicator-area" id="indicatorArea">
       <div class="home-indicator-line"></div>
     </div>
@@ -425,55 +306,60 @@
   </div>
 
   <script>
-    // System Clock Update
+    // 1. Fullscreen Engine - Auto Trigger on First Touch
+    function triggerAutoFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+      // Remove listener once triggered
+      window.removeEventListener('touchstart', triggerAutoFullscreen);
+      window.removeEventListener('pointerdown', triggerAutoFullscreen);
+      window.removeEventListener('click', triggerAutoFullscreen);
+    }
+    window.addEventListener('touchstart', triggerAutoFullscreen, { passive: true });
+    window.addEventListener('pointerdown', triggerAutoFullscreen, { passive: true });
+    window.addEventListener('click', triggerAutoFullscreen, { passive: true });
+
+    // 2. System Clock
     function updateClock() {
       const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('systemClock').textContent = `${hours}:${minutes}`;
+      document.getElementById('systemClock').textContent = 
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    function toggleSwitch(element) {
-      element.classList.toggle('active');
-    }
-
-    function showNotice(msg) {
-      const alertBox = document.createElement('div');
-      alertBox.className = 'absolute top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-100 px-4 py-2 text-xs border border-slate-700 shadow-xl z-50 transition-all';
-      alertBox.textContent = msg;
-      document.getElementById('viewport').appendChild(alertBox);
-      setTimeout(() => alertBox.remove(), 2000);
-    }
-
+    // 3. Fluid App Launch Controller
+    const settingsIcon = document.getElementById('settingsIcon');
+    const settingsApp = document.getElementById('settingsApp');
     let activeApp = null;
 
-    // Fast-response Zoom App Opening Animation Logic
-    function openApp(appId, event) {
-      const app = document.getElementById(appId);
+    function openApp(app, sourceEvent) {
       if (!app) return;
-
       activeApp = app;
-
-      // Force transform-origin strictly to the middle center
+      
+      // Explicitly center animation origin to screen center
       app.style.transformOrigin = 'center center';
-
+      
       app.classList.add('open');
     }
 
-    // Zoom App Closing Animation Logic
     function closeApp(app) {
       if (!app) return;
       app.classList.remove('open');
       activeApp = null;
     }
 
+    // Touch optimization for zero latency opening
+    settingsIcon.addEventListener('pointerdown', (e) => openApp(settingsApp, e));
+
+    // 4. Ultra-Fast Swipe Home Gesture Engine
     const indicatorArea = document.getElementById('indicatorArea');
     let startY = 0;
-    let swipeThreshold = 35; // Minimum drag displacement to trigger closing transition
 
-    // Touch Event Handling - Clean swipe trigger without live dragging preview
     indicatorArea.addEventListener('touchstart', (e) => {
       if (!activeApp) return;
       startY = e.touches[0].clientY;
@@ -482,28 +368,13 @@
     indicatorArea.addEventListener('touchend', (e) => {
       if (!activeApp) return;
       let endY = e.changedTouches[0].clientY;
-      let deltaY = startY - endY;
-
-      // Close app on swipe up gesture detection
-      if (deltaY > swipeThreshold) {
+      if (startY - endY > 20) { // High sensitivity swipe
         closeApp(activeApp);
       }
     });
 
-    // Mouse Event Handling - Clean swipe trigger for desktop testing
-    indicatorArea.addEventListener('mousedown', (e) => {
-      if (!activeApp) return;
-      startY = e.clientY;
-
-      const onMouseUp = (upEvent) => {
-        let deltaY = startY - upEvent.clientY;
-        if (deltaY > swipeThreshold) {
-          closeApp(activeApp);
-        }
-        window.removeEventListener('mouseup', onMouseUp);
-      };
-
-      window.addEventListener('mouseup', onMouseUp);
+    indicatorArea.addEventListener('click', () => {
+      if (activeApp) closeApp(activeApp);
     });
   </script>
 </body>
