@@ -1,1267 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KiantUI Emulator</title>
-    <style>
-        :root {
-            --phone-radius: 48px;
-            --screen-radius: 44px;
-            --app-inner-radius: 42px;
-            --ios-accent: #007aff;
-            --text-dark: #000000;
-            --text-muted: #8e8e93;
-            
-            /* Customization System Default Variables */
-            --anim-speed: 0.55s;
-            --anim-curve: cubic-bezier(0.25, 1, 0.3, 1);
-            --zoom-level-lock: 1.25;
-            --zoom-level-app: 1.18;
-            --icon-shape: 15px;
-            --icon-tint: transparent;
-            --blur-intensity: 0px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>RunUI Emulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      /* Enforce no rounded corners anywhere */
+      border-radius: 0px !important;
+    }
 
-        html, body {
-            background-color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; 
-            color: white;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+    body {
+      background-color: #0d0e12;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    /* Emulator Display Viewport - Completely sharp rectangular edges */
+    .viewport {
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      max-height: 860px;
+      position: relative;
+      background: #121318;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      border: 1px solid #232530;
+    }
 
-        .phone-frame {
-            width: 375px;
-            height: 712px;
-            background: #0d0d0d;
-            border-radius: var(--phone-radius);
-            padding: 4px; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3), inset 0 0 2px 1px rgba(255,255,255,0.15);
-            position: relative;
-            transform-origin: center center;
-        }
+    .wallpaper {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(145deg, #0a1128 0%, #1c1936 50%, #2b1029 100%);
+      z-index: 1;
+    }
 
-        .power-button {
-            position: absolute;
-            right: -6px;
-            top: 140px;
-            width: 6px;
-            height: 50px;
-            background: linear-gradient(to bottom, #ff3b30, #cc241d);
-            border-radius: 0 3px 3px 0;
-            cursor: pointer;
-            z-index: 2500;
-            box-shadow: 1px 2px 4px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
-        }
+    /* Ambient background graphic element */
+    .bg-glow {
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0,0,0,0) 70%);
+      top: 15%;
+      left: 20%;
+      pointer-events: none;
+      z-index: 2;
+    }
 
-        .power-button:active {
-            transform: translateX(-2px);
-        }
+    /* Status Bar */
+    .status-bar {
+      height: 36px;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      z-index: 50;
+      background: rgba(10, 11, 16, 0.3);
+      backdrop-filter: blur(10px);
+    }
 
-        .screen {
-            width: 100%;
-            height: 100%;
-            border-radius: var(--screen-radius);
-            overflow: hidden;
-            position: relative;
-            background-color: #000;
-        }
+    /* Home Screen Content */
+    .home-screen {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      padding: 30px 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: max-content;
+      gap: 24px 16px;
+    }
 
-        .punch-hole {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 17px;
-            height: 17px;
-            background-color: #000000;
-            border-radius: 50%;
-            z-index: 2200; 
-            box-shadow: inset 0 0 1px rgba(255,255,255,0.2);
-            pointer-events: none;
-        }
+    .app-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
 
-        /* Wallpapers Layer Configurations */
-        .wallpaper-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            transition: transform var(--anim-speed) var(--anim-curve), filter var(--anim-speed) var(--anim-curve), opacity 0.4s ease;
-        }
+    .app-icon:active {
+      transform: scale(0.94);
+      opacity: 0.85;
+    }
 
-        .wallpaper-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            transition: opacity 0.3s ease;
-        }
+    .icon-box {
+      width: 62px;
+      height: 62px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
 
-        #lockscreenWallpaper { z-index: 2; opacity: 1; }
-        #homescreenWallpaper { z-index: 1; opacity: 1; }
+    .app-label {
+      color: #f1f5f9;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 8px;
+      text-align: center;
+      letter-spacing: 0.2px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
 
-        .screen.lock-active .wallpaper-container {
-            transform: scale(var(--zoom-level-lock));
-        }
-        .screen.app-open .wallpaper-container {
-            transform: scale(var(--zoom-level-app));
-            filter: blur(var(--blur-intensity));
-        }
-        
-        /* AOD Wallpaper State */
-        .screen.aod-active .wallpaper-container {
-            opacity: 0.15;
-            transform: scale(1);
-            filter: brightness(0.25) contrast(1.2);
-        }
+    /* Smooth Non-Bouncy App Transition Window */
+    .app-container {
+      position: absolute;
+      inset: 0;
+      background: #121318;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(100%);
+      /* Professional, fast ease-out curve - NO bounce/overshoot */
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.24s linear,
+                  visibility 0.28s linear;
+      will-change: transform, opacity;
+    }
 
-        /* Gesture Activation Hotzones */
-        .top-edge-sensor {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 35px;
-            z-index: 1090;
-        }
+    .app-container.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0%);
+    }
 
-        .status-bar {
-            height: 44px;
-            padding: 0 26px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            font-weight: 600;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 10;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            transition: color calc(var(--anim-speed) * 0.6) ease;
-            pointer-events: none;
-        }
+    /* Header in Settings */
+    .app-header {
+      padding: 45px 24px 16px 24px;
+      background: #181920;
+      border-bottom: 1px solid #282a36;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
 
-        .screen.app-open .status-bar {
-            color: #000000;
-            text-shadow: none;
-        }
+    .app-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+    }
 
-        .home-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            padding-top: 54px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 2;
-            transform: scale(1);
-            transition: opacity calc(var(--anim-speed) * 0.6) ease, transform var(--anim-speed) var(--anim-curve);
-        }
+    /* Settings content list */
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 20px 80px 20px;
+    }
 
-        .screen.lock-active .home-screen,
-        .screen.aod-active .home-screen {
-            opacity: 0;
-            transform: scale(0.85);
-            pointer-events: none;
-        }
-        .screen.app-open .home-screen {
-            opacity: 0;
-            transform: scale(0.88);
-            pointer-events: none;
-        }
+    .settings-group {
+      background: #1a1c24;
+      border: 1px solid #2d303e;
+      margin-bottom: 20px;
+    }
 
-        /* Live Interactive Widgets Layout */
-        .widget-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-            width: 100%;
-            padding: 0 22px;
-            box-sizing: border-box;
-            margin-bottom: 8px;
-            margin-top: 10px;
-        }
-        .live-widget {
-            background: rgba(255, 255, 255, 0.22);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 20px;
-            height: 105px;
-            padding: 14px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .live-widget:active { transform: scale(0.95); }
-        .widget-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
-        
-        .weather-info { display: flex; align-items: center; justify-content: space-between; }
-        .weather-temp { font-size: 26px; font-weight: 300; }
-        .weather-icon-anim { font-size: 28px; animation: weatherFloat 2.5s ease-in-out infinite; }
-        @keyframes weatherFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    .group-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin: 0 0 8px 4px;
+    }
 
-        .cal-date { font-size: 24px; font-weight: 700; color: #ff453a; line-height: 1; }
-        .cal-event { font-size: 12px; font-weight: 500; opacity: 0.9; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .setting-row {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #232633;
+    }
 
-        .app-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 22px;
-            padding: 16px 22px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+    .setting-row:last-child {
+      border-bottom: none;
+    }
 
-        .app-icon-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-        }
+    .setting-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-        .app-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: var(--icon-shape);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 30px;
-            transition: transform 0.15s ease, border-radius 0.3s ease;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            position: relative;
-        }
+    .setting-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
 
-        .app-icon::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--icon-tint);
-            border-radius: inherit;
-            mix-blend-mode: color;
-            pointer-events: none;
-            transition: background-color 0.3s ease;
-        }
+    .setting-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
 
-        .app-icon-wrapper:active .app-icon {
-            transform: scale(0.85);
-        }
+    .setting-value {
+      font-size: 13px;
+      color: #94a3b8;
+    }
 
-        .app-icon.settings { background: linear-gradient(135deg, #a2a2a7, #636366); }
-        .app-icon.customize { background: linear-gradient(135deg, #ff9500, #ff5e3a); }
+    /* Toggle Switch */
+    .toggle {
+      width: 44px;
+      height: 24px;
+      background: #334155;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
 
-        .app-label {
-            font-size: 12px;
-            margin-top: 6px;
-            color: #fff;
-            text-align: center;
-            font-weight: 500;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-        }
+    .toggle.active {
+      background: #4f46e5;
+    }
 
-        /* App Window Architecture */
-        .app-window {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-            display: flex;
-            flex-direction: column;
-            padding-top: 54px;
-            box-sizing: border-box;
-            overflow: hidden;
-            opacity: 0;
-            border-radius: var(--screen-radius);
-            transform: scale(0.05);
-            pointer-events: none;
-            transition: transform var(--anim-speed) var(--anim-curve), 
-                        opacity calc(var(--anim-speed) * 0.45) linear, 
-                        border-radius var(--anim-speed) var(--anim-curve);
-        }
+    .toggle-knob {
+      width: 18px;
+      height: 18px;
+      background: #ffffff;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-        .app-window.active {
-            opacity: 1;
-            transform: scale(1) !important;
-            border-radius: var(--app-inner-radius);
-            pointer-events: auto;
-        }
+    .toggle.active .toggle-knob {
+      transform: translateX(20px);
+    }
 
-        #settingsApp { background: #f2f2f7; color: var(--text-dark); }
-        #customizeApp { background: #ffffff; color: var(--text-dark); }
+    /* Bottom Gesture Bar Container */
+    .home-indicator-area {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 32px;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding-bottom: 8px;
+      cursor: grab;
+      touch-action: none;
+    }
 
-        .settings-header-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #e5e5ea;
-            height: 60px;
-            padding: 0 16px;
-            z-index: 10;
-        }
+    .home-indicator-area:active {
+      cursor: grabbing;
+    }
 
-        .settings-header {
-            font-size: 28px;
-            font-weight: 700;
-            width: 100%;
-            transition: all var(--anim-speed) var(--anim-curve);
-        }
-        
-        .settings-header.centered {
-            text-align: center;
-            padding-right: 55px; 
-        }
+    .home-indicator-line {
+      width: 140px;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.7);
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
 
-        .settings-back-btn {
-            display: none;
-            background: transparent;
-            border: none;
-            color: var(--ios-accent);
-            font-size: 17px;
-            font-weight: 400;
-            cursor: pointer;
-            padding: 0;
-            align-items: center;
-            gap: 4px;
-            z-index: 15;
-            white-space: nowrap;
-        }
+    .home-indicator-area:hover .home-indicator-line {
+      background-color: rgba(255, 255, 255, 0.95);
+    }
 
-        .settings-viewport {
-            position: relative;
-            flex: 1;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .settings-page {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-            transition: transform var(--anim-speed) var(--anim-curve), opacity var(--anim-speed) ease;
-        }
-
-        .settings-list {
-            padding: 16px 20px;
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .settings-list.slide-out {
-            transform: translateX(-100%);
-            opacity: 0;
-        }
-
-        .about-device-page {
-            transform: translateX(100%);
-            opacity: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .about-device-page.slide-in {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .ui-panel-item {
-            background: #ffffff; 
-            padding: 16px;
-            border-radius: 14px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.02);
-        }
-        
-        #customizeApp .ui-panel-item { background: #f2f2f7; }
-        .ui-panel-item.clickable { cursor: pointer; }
-        .ui-panel-item span:last-child { color: var(--text-muted); }
-
-        .device-image-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-top: 16px;
-            margin-bottom: 16px;
-        }
-
-        .device-image {
-            width: 220px; 
-            height: auto;
-            border-radius: 24px;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.15);
-            background-color: #fff;
-        }
-
-        .about-info-list, .customize-container {
-            width: 100%;
-            padding: 0 20px;
-            box-sizing: border-box;
-        }
-
-        .customize-scroller {
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 60px;
-        }
-        .customize-title {
-            font-size: 28px;
-            font-weight: 700;
-            padding: 15px 20px 5px 20px;
-        }
-        .customize-section-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin: 15px 22px 8px 22px;
-            font-weight: 600;
-        }
-        .control-slider {
-            width: 100%;
-            margin: 8px 0;
-            accent-color: var(--ios-accent);
-        }
-        .control-select {
-            background: transparent;
-            border: none;
-            font-size: 16px;
-            color: var(--ios-accent);
-            cursor: pointer;
-            outline: none;
-            direction: rtl;
-        }
-
-        /* Toggle Switch Styling */
-        .switch-toggle {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-        .switch-toggle input { opacity: 0; width: 0; height: 0; }
-        .switch-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .3s;
-            border-radius: 24px;
-        }
-        .switch-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px; width: 18px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        input:checked + .switch-slider { background-color: var(--ios-accent); }
-        input:checked + .switch-slider:before { transform: translateX(20px); }
-
-        /* Wallpaper Grid Selector Group */
-        .wallpaper-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 5px;
-            width: 100%;
-        }
-        .wp-thumb {
-            aspect-ratio: 9/16;
-            border-radius: 8px;
-            background-size: cover;
-            background-position: center;
-            border: 2px solid transparent;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .wp-thumb.custom-upload-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #e5e5ea;
-            color: var(--text-dark);
-            font-size: 24px;
-        }
-        .wp-thumb.custom-upload-btn span {
-            font-size: 10px;
-            font-weight: 600;
-            margin-top: 4px;
-            color: var(--text-muted);
-        }
-
-        /* System Action Sheets Dialogs */
-        .action-sheet-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            z-index: 2300;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-        }
-        .action-sheet {
-            width: 92%;
-            margin-bottom: 16px;
-            background: transparent;
-            animation: slideUpSheet 0.3s cubic-bezier(0.25, 1, 0.3, 1);
-        }
-        @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .sheet-group {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 14px;
-            margin-bottom: 8px;
-            overflow: hidden;
-        }
-        .sheet-btn {
-            width: 100%;
-            padding: 16px;
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            font-size: 17px;
-            color: var(--ios-accent);
-            cursor: pointer;
-            text-align: center;
-        }
-        .sheet-btn:last-child { border-bottom: none; }
-        .sheet-btn.cancel { font-weight: 600; color: #ff3b30; }
-
-        /* Unified Slide down Quick Panels Panel */
-        .pull-panel {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(242, 242, 247, 0.82);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            z-index: 2000; 
-            transform: translateY(-100%);
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.3, 1);
-            box-sizing: border-box;
-            padding: 64px 20px 20px 20px;
-            color: black;
-            display: flex;
-            flex-direction: column;
-        }
-        .pull-panel.active { transform: translateY(0); }
-        .panel-heading { font-size: 22px; font-weight: 700; margin-bottom: 15px; color: #000; }
-
-        /* Notification Area */
-        .noti-scroll-area { flex: 1; overflow-y: auto; margin-bottom: 14px; }
-        .noti-card {
-            background: #ffffff;
-            padding: 14px;
-            border-radius: 16px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-        .noti-header { font-size: 12px; font-weight: 600; color: #666; display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .noti-body { font-size: 14px; font-weight: 500; color: #000; }
-
-        /* Control Tray Component */
-        .control-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 15px; }
-        .toggle-tile {
-            background: #ffffff;
-            border-radius: 18px;
-            padding: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            font-weight: 600;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-        .toggle-tile.enabled { background: var(--ios-accent); color: white; }
-        .toggle-icon { font-size: 20px; }
-
-        /* Always-On Display Mode Screen Overlay */
-        .aod-view {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.72); 
-            z-index: 1400;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.4s ease;
-        }
-        .screen.aod-active .aod-view { opacity: 1; pointer-events: auto; }
-        .aod-clock { font-size: 56px; font-weight: 200; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
-        .aod-meta { font-size: 14px; color: rgba(255,255,255,0.5); display: flex; gap: 10px; align-items: center; }
-        .aod-dots { font-size: 16px; letter-spacing: 4px; color: var(--ios-accent); margin-top: 15px; opacity: 0.8; }
-
-        /* System Base Overlays */
-        .home-bar-zone {
-            position: absolute;
-            bottom: 0; left: 0; right: 0; height: 50px;
-            display: flex; justify-content: center; align-items: flex-end;
-            padding-bottom: 12px; box-sizing: border-box; z-index: 1100; cursor: pointer;
-        }
-        .home-bar {
-            width: 140px; height: 5px;
-            background-color: rgba(255, 255, 255, 0.85);
-            border-radius: 100px; box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            transition: transform 0.2s, background-color 0.2s, opacity 0.2s;
-        }
-        .screen.app-open .home-bar { background-color: rgba(0, 0, 0, 0.45); box-shadow: none; }
-
-        .lockscreen-view {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: transparent; z-index: 900;
-            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-            padding: 70px 24px 60px 24px; box-sizing: border-box;
-            opacity: 0; pointer-events: none; transform: translateY(0);
-            transition: opacity 0.3s ease;
-        }
-        
-        .screen.lock-active .lockscreen-view { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
-        
-        /* Hide regular lockscreen clock and hints during active AOD mode */
-        .screen.aod-active .lockscreen-view { opacity: 0; pointer-events: none; }
-
-        .screen.lock-active.unlock-fade.unlock-anim .lockscreen-view { opacity: 0; transition: opacity var(--anim-speed) ease; }
-        .screen.lock-active.unlock-slideup.unlock-anim .lockscreen-view { opacity: 0; transform: translateY(-100%); transition: opacity var(--anim-speed) ease, transform var(--anim-speed) var(--anim-curve); }
-        .screen.lock-active.unlock-scale.unlock-anim .lockscreen-view { opacity: 0; transform: scale(1.4); transition: opacity var(--anim-speed) ease, transform var(--anim-speed) var(--anim-curve); }
-
-        .lock-clock { font-size: 72px; font-weight: 200; text-align: center; text-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .lock-hint { font-size: 15px; font-weight: 500; opacity: 0.8; letter-spacing: 0.3px; animation: bounceSwipeHint 2s infinite; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
-
-        @keyframes bounceSwipeHint {
-            0%, 100% { transform: translateY(0); opacity: 0.6; }
-            50% { transform: translateY(-6px); opacity: 1; }
-        }
-
-        .blackout-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000000; z-index: 1600;
-            opacity: 1; pointer-events: auto;
-            transition: opacity 0.15s linear;
-        }
-        .screen.system-on .blackout-layer { opacity: 0; pointer-events: none; }
-
-        @media (max-width: 450px) or (max-height: 750px) {
-            body { background-color: #000000; }
-            .phone-frame { transform: scale(0.85); }
-        }
-        @media (max-width: 340px) { .phone-frame { transform: scale(0.72); } }
-    </style>
+    /* Gesture Drag Overlay visual indicator during drag */
+    .app-container.dragging {
+      transition: none !important;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="phone-frame">
-        <div class="power-button" id="hardwarePowerBtn"></div>
+  <!-- Main RunUI Emulator Viewport -->
+  <div class="viewport" id="viewport">
+    
+    <!-- Background Design -->
+    <div class="wallpaper"></div>
+    <div class="bg-glow"></div>
 
-        <div class="screen" id="phoneScreen">
-            <div class="blackout-layer" id="systemBlackout"></div>
-            
-            <div class="aod-view" id="aodView">
-                <div class="aod-clock system-time">12:00</div>
-                <div class="aod-meta">
-                    <span>🔋 84%</span>
-                    <span>☁️ 24°C</span>
-                </div>
-                <div class="aod-dots">💬 • ✉️</div>
-            </div>
-
-            <div class="punch-hole"></div>
-            
-            <div class="top-edge-sensor" id="topSensorZone"></div>
-            
-            <div class="pull-panel" id="unifiedSystemPanel">
-                <div class="panel-heading" style="margin-bottom: 10px;">Control Center</div>
-                
-                <div class="control-grid">
-                    <div class="toggle-tile enabled" onclick="toggleControlTile(this)">
-                        <span class="toggle-icon">📶</span><span>Wi-Fi</span>
-                    </div>
-                    <div class="toggle-tile enabled" onclick="toggleControlTile(this)">
-                        <span class="toggle-icon">🎧</span><span>Bluetooth</span>
-                    </div>
-                </div>
-
-                <div class="panel-heading" style="font-size: 18px; margin-bottom: 8px; margin-top: 5px;">Notifications</div>
-                
-                <div class="noti-scroll-area">
-                    <div class="noti-card">
-                        <div class="noti-header"><span>Messages</span><span>Just now</span></div>
-                        <div class="noti-body">Alex: The live widget animation templates are running flawlessly.</div>
-                    </div>
-                    <div class="noti-card">
-                        <div class="noti-header"><span>Weather Engine</span><span>1h ago</span></div>
-                        <div class="noti-body">Thunderstorm watch issued for your current operational area.</div>
-                    </div>
-                </div>
-
-                <button class="sheet-btn" style="background: #e5e5ea; border-radius: 12px; padding: 12px; font-weight: 600; margin-top: auto; color: var(--text-dark);" onclick="closeSystemPanel()">Dismiss Panel</button>
-            </div>
-
-            <div class="wallpaper-container" id="wallpaperContainer">
-                <div class="wallpaper-layer" id="lockscreenWallpaper" style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=90');"></div>
-                <div class="wallpaper-layer" id="homescreenWallpaper" style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=90');"></div>
-            </div>
-            
-            <div class="status-bar" id="statusBar">
-                <span class="system-time">12:00</span>
-                <div style="display: flex; gap: 6px;">
-                    <span>📶</span>
-                    <span>🔋</span>
-                </div>
-            </div>
-
-            <div class="lockscreen-view" id="lockscreenView">
-                <div class="lock-clock system-time">12:00</div>
-                <div class="lock-hint">Swipe up from line to unlock</div>
-            </div>
-
-            <div class="home-screen">
-                
-                <div class="widget-row">
-                    <div class="live-widget" onclick="cycleWeatherState()">
-                        <div class="widget-title">Weather</div>
-                        <div class="weather-info">
-                            <div class="weather-temp" id="widgetTemp">24°C</div>
-                            <div class="weather-icon-anim" id="widgetWeatherIcon">☀️</div>
-                        </div>
-                        <div style="font-size: 11px; opacity: 0.8;" id="widgetWeatherDesc">Sunny Clear</div>
-                    </div>
-
-                    <div class="live-widget" onclick="cycleCalendarEvent()">
-                        <div class="widget-title">Calendar</div>
-                        <div>
-                            <div class="cal-date" id="widgetCalDay">14</div>
-                            <div class="cal-event" id="widgetCalEvent">Design Review Meeting</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="app-grid">
-                    <div class="app-icon-wrapper" onclick="openApp('settingsApp', this)">
-                        <div class="app-icon settings">⚙️</div>
-                        <div class="app-label">Settings</div>
-                    </div>
-                    <div class="app-icon-wrapper" onclick="openApp('customizeApp', this)">
-                        <div class="app-icon customize">🎨</div>
-                        <div class="app-label">Customize</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-window" id="settingsApp">
-                <div class="settings-header-wrapper">
-                    <button class="settings-back-btn" id="settingsBackBtn" onclick="showMainSettings()">
-                        <span>&lt;</span> Settings
-                    </button>
-                    <div class="settings-header" id="settingsTitle">Settings</div>
-                </div>
-                
-                <div class="settings-viewport">
-                    <div class="settings-page settings-list" id="mainSettingsMenu">
-                        <div class="ui-panel-item clickable" onclick="showAboutDevice()">
-                            <span>About Device</span>
-                            <span style="color:#c7c7cc;">&gt;</span>
-                        </div>
-                        <div class="ui-panel-item">
-                            <span>Mobile Optimization</span>
-                            <span>No-Scroll Frame</span>
-                        </div>
-                        <div class="ui-panel-item">
-                            <span>UI Highlight</span>
-                            <span>Clean Tap Native</span>
-                        </div>
-                    </div>
-
-                    <div class="settings-page about-device-page" id="aboutDevicePage">
-                        <div class="device-image-container">
-                            <img src="https://i.postimg.cc/SsjRRSZP/download.jpg" alt="Device Graphic" class="device-image">
-                        </div>
-                        <div class="about-info-list">
-                            <div class="ui-panel-item">
-                                <span>Phone Name</span>
-                                <span>Kiant Note 2 (unreleased)</span>
-                            </div>
-                            <div class="ui-panel-item">
-                                <span>Android Version</span>
-                                <span style="color: var(--text-dark);">15</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="app-window" id="customizeApp">
-                <div class="customize-title">Customize</div>
-                
-                <div class="customize-scroller">
-                    <div class="customize-section-title">Animation Duration</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; width:100%;">
-                                <span>Speed Metric</span>
-                                <span id="speedValue">0.55s</span>
-                            </div>
-                            <input type="range" min="0.1" max="2.0" step="0.05" value="0.55" class="control-slider" id="speedSlider" oninput="updateAnimationSystem()">
-                        </div>
-                    </div>
-
-                    <div class="customize-section-title">Unlock Animation Effect</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item">
-                            <span>Style Type</span>
-                            <select class="control-select" id="unlockAnimSelector">
-                                <option value="unlock-slideup">Slide Up</option>
-                                <option value="unlock-fade">Fade Dissolve</option>
-                                <option value="unlock-scale">Zoom Scale Out</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="customize-section-title">Wallpaper Opening Blur</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item">
-                            <span>Blur When App Open</span>
-                            <label class="switch-toggle">
-                                <input type="checkbox" id="blurToggle" onchange="updateAnimationSystem()">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="customize-section-title">App Icon Customization</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item">
-                            <span>Icon Corner Radius</span>
-                            <select class="control-select" id="iconShapeSelector" onchange="updateAnimationSystem()">
-                                <option value="15px">Squircle (Default)</option>
-                                <option value="8px">Soft Square</option>
-                                <option value="30px">Circular</option>
-                                <option value="0px">Sharp Square</option>
-                            </select>
-                        </div>
-                        <div class="ui-panel-item">
-                            <span>Color Filter Style</span>
-                            <select class="control-select" id="iconTintSelector" onchange="updateAnimationSystem()">
-                                <option value="transparent">Stock Color</option>
-                                <option value="rgba(0, 122, 255, 0.5)">Kiant Blue Mono</option>
-                                <option value="rgba(52, 199, 89, 0.5)">Forest Tint</option>
-                                <option value="rgba(255, 149, 0, 0.5)">Amber Gold</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="customize-section-title">Change Wallpaper</div>
-                    <div class="customize-container">
-                        <div class="wallpaper-grid">
-                            <div class="wp-thumb" style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80');" onclick="promptWallpaperTarget('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=90')"></div>
-                            <div class="wp-thumb" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80');" onclick="promptWallpaperTarget('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=90')"></div>
-                            <div class="wp-thumb" style="background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80');" onclick="promptWallpaperTarget('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1000&q=90')"></div>
-                            <div class="wp-thumb custom-upload-btn" onclick="triggerCustomGalleryUpload()">
-                                📁
-                                <span>Custom Gallery</span>
-                            </div>
-                        </div>
-                        <input type="file" id="hiddenGalleryInput" accept="image/*" style="display:none;" onchange="handleGalleryFile(this)">
-                    </div>
-
-                    <div class="customize-section-title">Interpolator Engine</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item">
-                            <span>Easing Curve</span>
-                            <select class="control-select" id="curveSelector" onchange="updateAnimationSystem()">
-                                <option value="cubic-bezier(0.25, 1, 0.3, 1)">iOS Fluid</option>
-                                <option value="cubic-bezier(0.4, 0, 0.2, 1)">Material Standard</option>
-                                <option value="cubic-bezier(0.34, 1.56, 0.64, 1)">Elastic Bounce</option>
-                                <option value="linear">Linear Tone</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="customize-section-title">Wallpaper Scale Matrix</div>
-                    <div class="customize-container">
-                        <div class="ui-panel-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; width:100%;">
-                                <span>Lockscreen Zoom Factor</span>
-                                <span id="lockZoomValue">1.25x</span>
-                            </div>
-                            <input type="range" min="1.0" max="1.6" step="0.05" value="1.25" class="control-slider" id="lockZoomSlider" oninput="updateAnimationSystem()">
-                        </div>
-                        
-                        <div class="ui-panel-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; width:100%;">
-                                <span>Application Zoom Factor</span>
-                                <span id="appZoomValue">1.18x</span>
-                            </div>
-                            <input type="range" min="1.0" max="1.5" step="0.05" value="1.18" class="control-slider" id="appZoomSlider" oninput="updateAnimationSystem()">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="action-sheet-overlay" id="wallpaperActionSheet">
-                <div class="action-sheet">
-                    <div class="sheet-group">
-                        <button class="sheet-btn" onclick="applySelectedWallpaper('lock')">Set Lock Screen</button>
-                        <button class="sheet-btn" onclick="applySelectedWallpaper('home')">Set Home Screen</button>
-                        <button class="sheet-btn" onclick="applySelectedWallpaper('both')">Set Both Wallpapers</button>
-                    </div>
-                    <div class="sheet-group">
-                        <button class="sheet-btn cancel" onclick="dismissWallpaperSheet()">Cancel</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="home-bar-zone" id="gestureZone">
-                <div class="home-bar" id="homeIndicatorLine"></div>
-            </div>
-
-        </div>
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span id="systemClock">12:00</span>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] tracking-wider text-indigo-400 font-bold uppercase">RunUI</span>
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+          <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.3c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.22 19.57 10.57 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>
+        </svg>
+      </div>
     </div>
 
-    <script>
-        let powerState = 0; 
-        let isLocked = true;
-        let currentActiveAppId = null;
-        let pendingWallpaperUrl = '';
+    <!-- Home Screen -->
+    <div class="home-screen">
+      <!-- Settings App Icon -->
+      <div class="app-icon" id="settingsIcon" onclick="openApp('settingsApp')">
+        <div class="icon-box" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+        </div>
+        <span class="app-label">Settings</span>
+      </div>
 
-        let weatherIndex = 0;
-        const weatherPresets = [
-            { temp: "24°C", icon: "☀️", desc: "Sunny Clear" },
-            { temp: "18°C", icon: "🌧️", desc: "Light Drizzle" },
-            { temp: "29°C", icon: "⛅", desc: "Partly Cloudy" },
-            { temp: "12°C", icon: "❄️", desc: "Snow Flurry" }
-        ];
+      <!-- Mock App 1 -->
+      <div class="app-icon" onclick="showNotice('Files app coming soon!')">
+        <div class="icon-box" style="background: linear-gradient(135deg, #10b981, #047857);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+          </svg>
+        </div>
+        <span class="app-label">Files</span>
+      </div>
 
-        let calendarIndex = 0;
-        const calendarPresets = [
-            { day: "14", event: "Design Review Meeting" },
-            { day: "15", event: "KiantUI Coding Lab" },
-            { day: "18", event: "Weekend Roadtrip" },
-            { day: "22", event: "Dentist Checkup 🦷" }
-        ];
+      <!-- Mock App 2 -->
+      <div class="app-icon" onclick="showNotice('Terminal app coming soon!')">
+        <div class="icon-box" style="background: linear-gradient(135deg, #64748b, #334155);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-14-9l4 4-4 4 1.41 1.41L12.83 13l-5.42-5.41L6 9zm6 7h6v2h-6z"/>
+          </svg>
+        </div>
+        <span class="app-label">Terminal</span>
+      </div>
+    </div>
 
-        const phoneScreen = document.getElementById('phoneScreen');
-        const gestureZone = document.getElementById('gestureZone');
-        const topSensorZone = document.getElementById('topSensorZone');
-        const hardwarePowerBtn = document.getElementById('hardwarePowerBtn');
-        const homeIndicatorLine = document.getElementById('homeIndicatorLine');
-        const unifiedSystemPanel = document.getElementById('unifiedSystemPanel');
-        const systemBlackout = document.getElementById('systemBlackout');
+    <!-- Settings App Full Overlay Window -->
+    <div class="app-container" id="settingsApp">
+      <!-- App Header -->
+      <div class="app-header">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-indigo-400 font-bold block mb-1">System Application</span>
+          <h1 class="app-title">Settings</h1>
+        </div>
+        <span class="text-xs text-slate-500 font-mono">v1.0.4</span>
+      </div>
+
+      <!-- Settings Menu Items -->
+      <div class="settings-content">
         
-        const mainSettingsMenu = document.getElementById('mainSettingsMenu');
-        const aboutDevicePage = document.getElementById('aboutDevicePage');
-        const settingsBackBtn = document.getElementById('settingsBackBtn');
-        const settingsTitle = document.getElementById('settingsTitle');
-        
-        const wallpaperActionSheet = document.getElementById('wallpaperActionSheet');
-        const lockscreenWallpaper = document.getElementById('lockscreenWallpaper');
-        const homescreenWallpaper = document.getElementById('homescreenWallpaper');
-        const hiddenGalleryInput = document.getElementById('hiddenGalleryInput');
+        <p class="group-title">Connectivity</p>
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-icon bg-indigo-600">
+                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.8c3.67 0 7.02 1.38 9.58 3.65L12 20.3 2.42 11.45C4.98 9.18 8.33 7.8 12 7.8z"/></svg>
+              </div>
+              <span class="setting-text">Wi-Fi Network</span>
+            </div>
+            <span class="setting-value">RunUI-HyperNet</span>
+          </div>
 
-        function cycleWeatherState() {
-            weatherIndex = (weatherIndex + 1) % weatherPresets.length;
-            const current = weatherPresets[weatherIndex];
-            document.getElementById('widgetTemp').textContent = current.temp;
-            document.getElementById('widgetWeatherIcon').textContent = current.icon;
-            document.getElementById('widgetWeatherDesc').textContent = current.desc;
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-icon bg-blue-600">
+                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
+              </div>
+              <span class="setting-text">Bluetooth</span>
+            </div>
+            <div class="toggle active" onclick="toggleSwitch(this)">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="group-title">Preferences</p>
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-icon bg-amber-600">
+                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+              </div>
+              <span class="setting-text">Dark Theme</span>
+            </div>
+            <div class="toggle active" onclick="toggleSwitch(this)">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-icon bg-purple-600">
+                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+              </div>
+              <span class="setting-text">Notifications</span>
+            </div>
+            <div class="toggle" onclick="toggleSwitch(this)">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="group-title">System</p>
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-icon bg-emerald-600">
+                <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+              </div>
+              <span class="setting-text">About RunUI</span>
+            </div>
+            <span class="setting-value">v1.0.0-flat</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Middle Bottom Swipe Indicator Bar for Closing Apps -->
+    <div class="home-indicator-area" id="indicatorArea">
+      <div class="home-indicator-line"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // Live Clock functionality
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('systemClock').textContent = `${hours}:${minutes}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Toggle switch helper
+    function toggleSwitch(element) {
+      element.classList.toggle('active');
+    }
+
+    // Notice notification
+    function showNotice(msg) {
+      const alertBox = document.createElement('div');
+      alertBox.className = 'absolute top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-100 px-4 py-2 text-xs border border-slate-700 shadow-xl z-50 transition-all';
+      alertBox.textContent = msg;
+      document.getElementById('viewport').appendChild(alertBox);
+      setTimeout(() => alertBox.remove(), 2000);
+    }
+
+    // App Window Control
+    let activeApp = null;
+
+    function openApp(appId) {
+      const app = document.getElementById(appId);
+      if (app) {
+        activeApp = app;
+        app.style.transform = '';
+        app.classList.add('open');
+      }
+    }
+
+    function closeApp(app) {
+      if (!app) return;
+      app.classList.remove('open');
+      app.style.transform = '';
+      activeApp = null;
+    }
+
+    // Swipe Up gesture detection strictly from the bottom indicator line
+    const indicatorArea = document.getElementById('indicatorArea');
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+    const swipeThreshold = 50; // Minimum vertical distance required to dismiss app
+
+    // Touch Event Handlers
+    indicatorArea.addEventListener('touchstart', (e) => {
+      if (!activeApp) return;
+      startY = e.touches[0].clientY;
+      currentY = startY;
+      isDragging = true;
+      activeApp.classList.add('dragging');
+    }, { passive: true });
+
+    indicatorArea.addEventListener('touchmove', (e) => {
+      if (!isDragging || !activeApp) return;
+      currentY = e.touches[0].clientY;
+      let deltaY = startY - currentY;
+
+      // Only drag upward
+      if (deltaY > 0) {
+        let percentage = (deltaY / window.innerHeight) * 100;
+        activeApp.style.transform = `translateY(-${percentage}%)`;
+      }
+    }, { passive: true });
+
+    indicatorArea.addEventListener('touchend', () => {
+      if (!isDragging || !activeApp) return;
+      isDragging = false;
+      activeApp.classList.remove('dragging');
+
+      let deltaY = startY - currentY;
+      if (deltaY > swipeThreshold) {
+        closeApp(activeApp);
+      } else {
+        // Reset back to open position cleanly without bounce
+        activeApp.style.transform = 'translateY(0%)';
+      }
+    });
+
+    // Mouse Event Handlers (for desktop testing)
+    indicatorArea.addEventListener('mousedown', (e) => {
+      if (!activeApp) return;
+      startY = e.clientY;
+      currentY = startY;
+      isDragging = true;
+      activeApp.classList.add('dragging');
+
+      const onMouseMove = (moveEvent) => {
+        if (!isDragging || !activeApp) return;
+        currentY = moveEvent.clientY;
+        let deltaY = startY - currentY;
+        if (deltaY > 0) {
+          let percentage = (deltaY / activeApp.offsetHeight) * 100;
+          activeApp.style.transform = `translateY(-${percentage}%)`;
         }
+      };
 
-        function cycleCalendarEvent() {
-            calendarIndex = (calendarIndex + 1) % calendarPresets.length;
-            const current = calendarPresets[calendarIndex];
-            document.getElementById('widgetCalDay').textContent = current.day;
-            document.getElementById('widgetCalEvent').textContent = current.event;
+      const onMouseUp = () => {
+        if (isDragging && activeApp) {
+          isDragging = false;
+          activeApp.classList.remove('dragging');
+          let deltaY = startY - currentY;
+          if (deltaY > swipeThreshold) {
+            closeApp(activeApp);
+          } else {
+            activeApp.style.transform = 'translateY(0%)';
+          }
         }
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
 
-        function updateAnimationSystem() {
-            const speed = document.getElementById('speedSlider').value;
-            const curve = document.getElementById('curveSelector').value;
-            const lockZoom = document.getElementById('lockZoomSlider').value;
-            const appZoom = document.getElementById('appZoomSlider').value;
-            const iconShape = document.getElementById('iconShapeSelector').value;
-            const iconTint = document.getElementById('iconTintSelector').value;
-            const blurToggle = document.getElementById('blurToggle').checked;
-
-            document.getElementById('speedValue').textContent = speed + 's';
-            document.getElementById('lockZoomValue').textContent = lockZoom + 'x';
-            document.getElementById('appZoomValue').textContent = appZoom + 'x';
-
-            const root = document.documentElement;
-            root.style.setProperty('--anim-speed', speed + 's');
-            root.style.setProperty('--anim-curve', curve);
-            root.style.setProperty('--zoom-level-lock', lockZoom);
-            root.style.setProperty('--zoom-level-app', appZoom);
-            root.style.setProperty('--icon-shape', iconShape);
-            root.style.setProperty('--icon-tint', iconTint);
-            root.style.setProperty('--blur-intensity', blurToggle ? '12px' : '0px');
-        }
-
-        function toggleControlTile(tileElement) {
-            tileElement.classList.toggle('enabled');
-        }
-
-        function openSystemPanel() {
-            if (powerState !== 2 || isLocked) return; 
-            unifiedSystemPanel.classList.add('active');
-        }
-
-        function closeSystemPanel() {
-            unifiedSystemPanel.classList.remove('active');
-        }
-
-        function promptWallpaperTarget(url) {
-            pendingWallpaperUrl = url;
-            wallpaperActionSheet.style.display = 'flex';
-        }
-
-        function dismissWallpaperSheet() {
-            wallpaperActionSheet.style.display = 'none';
-            pendingWallpaperUrl = '';
-        }
-
-        function applySelectedWallpaper(target) {
-            if (!pendingWallpaperUrl) return;
-            
-            if (target === 'lock' || target === 'both') {
-                lockscreenWallpaper.style.backgroundImage = `url('${pendingWallpaperUrl}')`;
-            }
-            if (target === 'home' || target === 'both') {
-                homescreenWallpaper.style.backgroundImage = `url('${pendingWallpaperUrl}')`;
-            }
-            dismissWallpaperSheet();
-        }
-
-        function triggerCustomGalleryUpload() {
-            hiddenGalleryInput.click();
-        }
-
-        function handleGalleryFile(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    promptWallpaperTarget(e.target.result);
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function updateClock() {
-            const now = new Date();
-            let hours = now.getHours();
-            let minutes = now.getMinutes();
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            document.querySelectorAll('.system-time').forEach(el => el.textContent = `${hours}:${minutes}`);
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        document.addEventListener('touchmove', function(e) {
-            if (e.target.closest('#phoneScreen') === null) e.preventDefault();
-        }, { passive: false });
-
-        // Power Button Core Logic
-        hardwarePowerBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSystemPanel();
-
-            systemBlackout.style.opacity = "0";
-            systemBlackout.style.pointerEvents = "none";
-
-            if (powerState === 0 || powerState === 2) {
-                // Drop into Lockscreen Always-On Display Mode
-                powerState = 1;
-                document.querySelectorAll('.app-window').forEach(app => app.classList.remove('active'));
-                
-                phoneScreen.classList.remove('system-on', 'app-open');
-                phoneScreen.classList.add('aod-active', 'lock-active');
-                
-                lockscreenWallpaper.style.opacity = "1"; 
-                homeIndicatorLine.style.opacity = "0";
-            } else if (powerState === 1) {
-                // Wake up from AOD to bright Lockscreen frame
-                powerState = 2;
-                isLocked = true;
-                phoneScreen.classList.remove('aod-active');
-                phoneScreen.classList.add('system-on', 'lock-active');
-                
-                lockscreenWallpaper.style.opacity = "1"; 
-                homeIndicatorLine.style.opacity = "1";
-                currentActiveAppId = null;
-                showMainSettings();
-            }
-        });
-
-        function openApp(appWindowId, elementClicked) {
-            if (powerState !== 2 || isLocked) return;
-            
-            const appWindow = document.getElementById(appWindowId);
-            
-            if (elementClicked) {
-                const iconRect = elementClicked.getBoundingClientRect();
-                const screenRect = phoneScreen.getBoundingClientRect();
-                
-                const originX = (iconRect.left + (iconRect.width / 2)) - screenRect.left;
-                const originY = (iconRect.top + (iconRect.height / 2)) - screenRect.top;
-                
-                appWindow.style.transformOrigin = `${originX}px ${originY}px`;
-            }
-
-            phoneScreen.classList.add('app-open');
-            appWindow.classList.add('active');
-            currentActiveAppId = appWindowId;
-        }
-
-        function closeCurrentActiveApp() {
-            if (!currentActiveAppId) return;
-            phoneScreen.classList.remove('app-open');
-            document.getElementById(currentActiveAppId).classList.remove('active');
-            currentActiveAppId = null;
-        }
-
-        function showAboutDevice() {
-            mainSettingsMenu.classList.add('slide-out');
-            aboutDevicePage.classList.add('slide-in');
-            settingsBackBtn.style.display = 'flex';
-            settingsTitle.textContent = 'About';
-            settingsTitle.classList.add('centered'); 
-        }
-
-        function showMainSettings() {
-            mainSettingsMenu.classList.remove('slide-out');
-            aboutDevicePage.classList.remove('slide-in');
-            settingsBackBtn.style.display = 'none';
-            settingsTitle.textContent = 'Settings';
-            settingsTitle.classList.remove('centered'); 
-        }
-
-        // Gesture Processing Systems
-        let startY = 0;
-        let isSwiping = false;
-        let targetSensorMode = '';
-
-        gestureZone.addEventListener('touchstart', (e) => {
-            if (powerState !== 2) return;
-            startY = e.touches[0].clientY;
-            isSwiping = true;
-            targetSensorMode = 'bottom';
-        }, { passive: true });
-
-        topSensorZone.addEventListener('touchstart', (e) => {
-            if (powerState !== 2 || isLocked) return;
-            startY = e.touches[0].clientY;
-            isSwiping = true;
-            targetSensorMode = 'top';
-        }, { passive: true });
-
-        document.addEventListener('touchend', (e) => {
-            if (!isSwiping) return;
-            evaluateGestureMatrix(startY, e.changedTouches[0].clientY);
-            isSwiping = false;
-        }, { passive: true });
-
-        // Desktop Pointer Listeners
-        gestureZone.addEventListener('mousedown', (e) => {
-            if (powerState !== 2) return;
-            startY = e.clientY;
-            isSwiping = true;
-            targetSensorMode = 'bottom';
-            setupMouseListeners();
-        });
-
-        topSensorZone.addEventListener('mousedown', (e) => {
-            if (powerState !== 2 || isLocked) return;
-            startY = e.clientY;
-            isSwiping = true;
-            targetSensorMode = 'top';
-            setupMouseListeners();
-        });
-
-        function setupMouseListeners() {
-            function onMouseUp(upEvent) {
-                if (isSwiping) {
-                    evaluateGestureMatrix(startY, upEvent.clientY);
-                    isSwiping = false;
-                }
-                document.removeEventListener('mouseup', onMouseUp);
-            }
-            document.addEventListener('mouseup', onMouseUp);
-        }
-
-        function evaluateGestureMatrix(start, end) {
-            const distance = end - start;
-            
-            if (targetSensorMode === 'bottom' && distance < -25) { 
-                if (isLocked) {
-                    const chosenEffect = document.getElementById('unlockAnimSelector').value;
-                    
-                    phoneScreen.classList.add(chosenEffect);
-                    phoneScreen.classList.add('unlock-anim');
-                    lockscreenWallpaper.style.opacity = "0"; 
-                    
-                    setTimeout(() => {
-                        phoneScreen.classList.remove('lock-active');
-                        phoneScreen.classList.remove('unlock-anim', chosenEffect);
-                        isLocked = false;
-                    }, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--anim-speed')) * 1000 * 0.8); 
-                } else {
-                    closeCurrentActiveApp();
-                }
-            }
-            
-            if (targetSensorMode === 'top' && distance > 25) {
-                openSystemPanel();
-            }
-        }
-    </script>
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+  </script>
 </body>
 </html>
