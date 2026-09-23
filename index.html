@@ -15,8 +15,8 @@
     %22short_name%22:%22FluidUI%22,
     %22start_url%22:%22.%22,
     %22display%22:%22standalone%22,
-    %22background_color%22:%22%2308090c%22,
-    %22theme_color%22:%22%2308090c%22
+    %22background_color%22:%22%2338bdf8%22,
+    %22theme_color%22:%22%2338bdf8%22
   }">
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -66,11 +66,50 @@
       }
     }
 
+    /* Mountain Day Wallpaper */
     .wallpaper {
       position: absolute;
       inset: 0;
-      background: linear-gradient(150deg, #070c1e 0%, #171530 45%, #230d22 100%);
+      background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 35%, #fef08a 60%, #15803d 82%, #166534 100%);
       z-index: 1;
+      overflow: hidden;
+    }
+
+    /* Sun Glow */
+    .wallpaper::before {
+      content: '';
+      position: absolute;
+      top: 15%;
+      right: 15%;
+      width: 90px;
+      height: 90px;
+      background: radial-gradient(circle, #fef9c3 30%, rgba(254, 240, 138, 0.4) 70%, transparent 100%);
+      border-radius: 50% !important;
+      filter: blur(4px);
+    }
+
+    /* Mountain Ridge Layer 1 */
+    .wallpaper::after {
+      content: '';
+      position: absolute;
+      bottom: 12%;
+      left: -20%;
+      width: 140%;
+      height: 40%;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      clip-path: polygon(0% 100%, 0% 40%, 25% 15%, 45% 45%, 70% 10%, 100% 50%, 100% 100%);
+      opacity: 0.85;
+    }
+
+    .mountain-front {
+      position: absolute;
+      bottom: 0;
+      left: -10%;
+      width: 120%;
+      height: 28%;
+      background: linear-gradient(135deg, #14532d 0%, #064e3b 100%);
+      clip-path: polygon(0% 100%, 0% 30%, 35% 60%, 55% 20%, 80% 50%, 100% 15%, 100% 100%);
+      z-index: 2;
     }
 
     /* Status Bar */
@@ -82,11 +121,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #f1f5f9;
+      color: #0f172a;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       z-index: 50;
       background: transparent;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
     }
 
     .home-screen {
@@ -121,17 +161,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.25);
     }
 
     .app-label {
-      color: #f8fafc;
+      color: #ffffff;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       margin-top: 8px;
       text-align: center;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
     }
 
     /* Slow & Fluid App Launching Animation */
@@ -144,8 +184,9 @@
       flex-direction: column;
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.25);
-      transform-origin: center center !important;
+      transform: scale(0.15);
+      /* Dynamically updated via JS to tap position */
+      transform-origin: center center;
       /* Slow, fluid spring transition timing */
       transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
                   opacity 0.45s ease-out,
@@ -240,7 +281,8 @@
     .home-indicator-line {
       width: 140px;
       height: 5px;
-      background-color: rgba(255, 255, 255, 0.7);
+      background-color: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
       transition: background-color 0.2s ease, transform 0.2s ease;
     }
 
@@ -254,15 +296,18 @@
 
   <div class="viewport" id="viewport">
     
-    <div class="wallpaper"></div>
+    <div class="wallpaper">
+      <div class="mountain-front"></div>
+    </div>
 
     <div class="status-bar">
       <span id="systemClock">12:00</span>
-      <span class="text-[10px] tracking-wider text-indigo-400 font-bold uppercase">Fluid Engine</span>
+      <span class="text-[10px] tracking-wider text-slate-800 font-extrabold uppercase">Fluid Engine</span>
     </div>
 
     <div class="home-screen">
-      <div class="app-icon" id="settingsIcon">
+      <!-- 1. Settings App -->
+      <div class="app-icon" id="settingsIcon" data-app="settingsApp">
         <div class="icon-box" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
           <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
             <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/>
@@ -270,9 +315,39 @@
         </div>
         <span class="app-label">Settings</span>
       </div>
+
+      <!-- 2. Camera App -->
+      <div class="app-icon" id="cameraIcon" data-app="cameraApp">
+        <div class="icon-box" style="background: linear-gradient(135deg, #475569, #0f172a);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+          </svg>
+        </div>
+        <span class="app-label">Camera</span>
+      </div>
+
+      <!-- 3. Messages App -->
+      <div class="app-icon" id="messagesIcon" data-app="messagesApp">
+        <div class="icon-box" style="background: linear-gradient(135deg, #22c55e, #15803d);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+          </svg>
+        </div>
+        <span class="app-label">Messages</span>
+      </div>
+
+      <!-- 4. Weather App -->
+      <div class="app-icon" id="weatherIcon" data-app="weatherApp">
+        <div class="icon-box" style="background: linear-gradient(135deg, #38bdf8, #0284c7);">
+          <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+          </svg>
+        </div>
+        <span class="app-label">Weather</span>
+      </div>
     </div>
 
-    <!-- App View Container -->
+    <!-- App View 1: Settings Container -->
     <div class="app-container" id="settingsApp">
       <div class="app-header">
         <div>
@@ -296,6 +371,52 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- App View 2: Camera Container -->
+    <div class="app-container" id="cameraApp" style="background: #000000;">
+      <div class="app-header" style="background: #000; border-bottom: 1px solid #222;">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-amber-400 font-bold block mb-1">Media</span>
+          <h1 class="text-2xl font-bold text-slate-100">Camera</h1>
+        </div>
+      </div>
+      <div class="settings-content flex flex-col justify-center items-center text-center">
+        <div class="w-64 h-64 border-2 border-dashed border-slate-700 flex justify-center items-center mb-6">
+          <span class="text-slate-500 text-sm">Viewfinder Active</span>
+        </div>
+        <div class="w-16 h-16 rounded-full border-4 border-white bg-red-600 active:scale-90 transition-transform"></div>
+      </div>
+    </div>
+
+    <!-- App View 3: Messages Container -->
+    <div class="app-container" id="messagesApp" style="background: #0f172a;">
+      <div class="app-header" style="background: #1e293b; border-bottom: 1px solid #334155;">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold block mb-1">Communication</span>
+          <h1 class="text-2xl font-bold text-slate-100">Messages</h1>
+        </div>
+      </div>
+      <div class="settings-content">
+        <div class="p-4 bg-slate-800 border border-slate-700 mb-3">
+          <p class="text-xs text-emerald-400 font-bold mb-1">System Support</p>
+          <p class="text-sm text-slate-200">Your fluid UI environment is running smoothly!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- App View 4: Weather Container -->
+    <div class="app-container" id="weatherApp" style="background: linear-gradient(180deg, #0284c7, #0f172a);">
+      <div class="app-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-sky-300 font-bold block mb-1">Environment</span>
+          <h1 class="text-2xl font-bold text-slate-100">Mountain Weather</h1>
+        </div>
+      </div>
+      <div class="settings-content text-center pt-8">
+        <h2 class="text-5xl font-bold text-white mb-2">22°C</h2>
+        <p class="text-sky-200 font-medium">Sunny & Clear Mountain Range</p>
       </div>
     </div>
 
@@ -332,17 +453,23 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 3. Fluid App Launch Controller
-    const settingsIcon = document.getElementById('settingsIcon');
-    const settingsApp = document.getElementById('settingsApp');
+    // 3. Fluid App Launch Controller with Icon Origin Calculation
     let activeApp = null;
 
-    function openApp(app, sourceEvent) {
+    function openApp(app, sourceElement) {
       if (!app) return;
       activeApp = app;
       
-      // Explicitly center animation origin to screen center
-      app.style.transformOrigin = 'center center';
+      // Calculate icon origin dynamically from clicked icon
+      if (sourceElement) {
+        const rect = sourceElement.getBoundingClientRect();
+        const viewportRect = document.getElementById('viewport').getBoundingClientRect();
+        
+        const centerX = (rect.left + rect.width / 2) - viewportRect.left;
+        const centerY = (rect.top + rect.height / 2) - viewportRect.top;
+        
+        app.style.transformOrigin = `${centerX}px ${centerY}px`;
+      }
       
       app.classList.add('open');
     }
@@ -353,8 +480,14 @@
       activeApp = null;
     }
 
-    // Touch optimization for zero latency opening
-    settingsIcon.addEventListener('pointerdown', (e) => openApp(settingsApp, e));
+    // Attach listener to all working app icons
+    document.querySelectorAll('.app-icon').forEach(icon => {
+      icon.addEventListener('pointerdown', (e) => {
+        const targetAppId = icon.getAttribute('data-app');
+        const targetApp = document.getElementById(targetAppId);
+        openApp(targetApp, icon);
+      });
+    });
 
     // 4. Ultra-Fast Swipe Home Gesture Engine
     const indicatorArea = document.getElementById('indicatorArea');
