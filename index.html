@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>RunUI Emulator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -12,81 +12,76 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      /* Enforce no rounded corners anywhere */
+      /* Enforce strict flat edges without rounded corners */
       border-radius: 0px !important;
     }
 
-    body {
-      background-color: #0d0e12;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+    html, body {
       width: 100vw;
+      height: 100vh;
+      min-height: -webkit-fill-available;
       overflow: hidden;
+      background-color: #08090c;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Emulator Display Viewport - Completely sharp rectangular edges */
     .viewport {
-      width: 100%;
-      max-width: 420px;
+      width: 100vw;
       height: 100vh;
-      max-height: 860px;
+      height: 100dvh;
       position: relative;
-      background: #121318;
+      background: #0d0e12;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
-      border: 1px solid #232530;
     }
 
     .wallpaper {
       position: absolute;
       inset: 0;
-      background: linear-gradient(145deg, #0a1128 0%, #1c1936 50%, #2b1029 100%);
+      background: linear-gradient(150deg, #070c1e 0%, #171530 45%, #230d22 100%);
       z-index: 1;
     }
 
-    /* Ambient background graphic element */
     .bg-glow {
       position: absolute;
-      width: 250px;
-      height: 250px;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(0,0,0,0) 70%);
-      top: 15%;
-      left: 20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(0,0,0,0) 70%);
+      top: 10%;
+      left: 10%;
       pointer-events: none;
       z-index: 2;
     }
 
-    /* Status Bar */
     .status-bar {
-      height: 36px;
-      padding: 0 20px;
+      height: calc(36px + env(safe-area-inset-top, 0px));
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-left: 20px;
+      padding-right: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #e2e8f0;
+      color: #f1f5f9;
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.3px;
       z-index: 50;
-      background: rgba(10, 11, 16, 0.3);
-      backdrop-filter: blur(10px);
+      background: rgba(10, 11, 16, 0.4);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    /* Home Screen Content */
     .home-screen {
       position: relative;
       z-index: 10;
       flex: 1;
-      padding: 30px 24px;
+      padding: 36px 24px calc(40px + env(safe-area-inset-bottom, 0px)) 24px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
       grid-auto-rows: max-content;
-      gap: 24px 16px;
+      gap: 28px 20px;
+      align-content: start;
     }
 
     .app-icon {
@@ -98,23 +93,22 @@
     }
 
     .app-icon:active {
-      transform: scale(0.94);
+      transform: scale(0.92);
       opacity: 0.85;
     }
 
     .icon-box {
-      width: 62px;
-      height: 62px;
+      width: 64px;
+      height: 64px;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      position: relative;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     .app-label {
-      color: #f1f5f9;
+      color: #f8fafc;
       font-size: 11px;
       font-weight: 500;
       margin-top: 8px;
@@ -123,22 +117,22 @@
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
 
-    /* Smooth Non-Bouncy App Transition Window */
     .app-container {
       position: absolute;
       inset: 0;
-      background: #121318;
+      background: #111218;
       z-index: 40;
       display: flex;
       flex-direction: column;
       opacity: 0;
       visibility: hidden;
       transform: translateY(100%);
-      /* Professional, fast ease-out curve - NO bounce/overshoot */
-      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                  opacity 0.24s linear,
-                  visibility 0.28s linear;
+      /* Ultra smooth cubic curve without bounce */
+      transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.25, 1),
+                  opacity 0.22s linear,
+                  visibility 0.26s linear;
       will-change: transform, opacity;
+      padding-top: env(safe-area-inset-top, 0px);
     }
 
     .app-container.open {
@@ -147,34 +141,32 @@
       transform: translateY(0%);
     }
 
-    /* Header in Settings */
     .app-header {
-      padding: 45px 24px 16px 24px;
-      background: #181920;
-      border-bottom: 1px solid #282a36;
+      padding: 30px 24px 16px 24px;
+      background: #161822;
+      border-bottom: 1px solid #232636;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
     }
 
     .app-title {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 700;
       color: #f8fafc;
       letter-spacing: -0.5px;
     }
 
-    /* Settings content list */
     .settings-content {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 20px 80px 20px;
+      padding: 24px 20px calc(60px + env(safe-area-inset-bottom, 0px)) 20px;
     }
 
     .settings-group {
-      background: #1a1c24;
-      border: 1px solid #2d303e;
-      margin-bottom: 20px;
+      background: #181a24;
+      border: 1px solid #2a2e3f;
+      margin-bottom: 24px;
     }
 
     .group-title {
@@ -191,7 +183,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #232633;
+      border-bottom: 1px solid #202330;
     }
 
     .setting-row:last-child {
@@ -224,7 +216,7 @@
       color: #94a3b8;
     }
 
-    /* Toggle Switch */
+    /* Toggle switch widget */
     .toggle {
       width: 44px;
       height: 24px;
@@ -252,18 +244,17 @@
       transform: translateX(20px);
     }
 
-    /* Bottom Gesture Bar Container */
     .home-indicator-area {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 32px;
+      height: calc(36px + env(safe-area-inset-bottom, 0px));
       z-index: 100;
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      padding-bottom: 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
       cursor: grab;
       touch-action: none;
     }
@@ -275,7 +266,7 @@
     .home-indicator-line {
       width: 140px;
       height: 4px;
-      background-color: rgba(255, 255, 255, 0.7);
+      background-color: rgba(255, 255, 255, 0.75);
       transition: background-color 0.2s ease, transform 0.15s ease;
     }
 
@@ -283,7 +274,6 @@
       background-color: rgba(255, 255, 255, 0.95);
     }
 
-    /* Gesture Drag Overlay visual indicator during drag */
     .app-container.dragging {
       transition: none !important;
     }
@@ -291,10 +281,8 @@
 </head>
 <body>
 
-  <!-- Main RunUI Emulator Viewport -->
   <div class="viewport" id="viewport">
     
-    <!-- Background Design -->
     <div class="wallpaper"></div>
     <div class="bg-glow"></div>
 
@@ -309,19 +297,18 @@
       </div>
     </div>
 
-    <!-- Home Screen -->
     <div class="home-screen">
       <!-- Settings App Icon -->
       <div class="app-icon" id="settingsIcon" onclick="openApp('settingsApp')">
         <div class="icon-box" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
           <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
-            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/>
           </svg>
         </div>
         <span class="app-label">Settings</span>
       </div>
 
-      <!-- Mock App 1 -->
+      <!-- Additional Applications -->
       <div class="app-icon" onclick="showNotice('Files app coming soon!')">
         <div class="icon-box" style="background: linear-gradient(135deg, #10b981, #047857);">
           <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
@@ -331,8 +318,7 @@
         <span class="app-label">Files</span>
       </div>
 
-      <!-- Mock App 2 -->
-      <div class="app-icon" onclick="showNotice('Terminal app coming soon!')">
+      <div class="app-icon" onclick="showNotice('Terminal coming soon!')">
         <div class="icon-box" style="background: linear-gradient(135deg, #64748b, #334155);">
           <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24">
             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-14-9l4 4-4 4 1.41 1.41L12.83 13l-5.42-5.41L6 9zm6 7h6v2h-6z"/>
@@ -342,9 +328,7 @@
       </div>
     </div>
 
-    <!-- Settings App Full Overlay Window -->
     <div class="app-container" id="settingsApp">
-      <!-- App Header -->
       <div class="app-header">
         <div>
           <span class="text-xs uppercase tracking-wider text-indigo-400 font-bold block mb-1">System Application</span>
@@ -353,9 +337,7 @@
         <span class="text-xs text-slate-500 font-mono">v1.0.4</span>
       </div>
 
-      <!-- Settings Menu Items -->
       <div class="settings-content">
-        
         <p class="group-title">Connectivity</p>
         <div class="settings-group">
           <div class="setting-row">
@@ -417,14 +399,13 @@
               </div>
               <span class="setting-text">About RunUI</span>
             </div>
-            <span class="setting-value">v1.0.0-flat</span>
+            <span class="setting-value">v1.0.0-fullscreen</span>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- Middle Bottom Swipe Indicator Bar for Closing Apps -->
+    <!-- Swipe Indicator Line -->
     <div class="home-indicator-area" id="indicatorArea">
       <div class="home-indicator-line"></div>
     </div>
@@ -432,7 +413,7 @@
   </div>
 
   <script>
-    // Live Clock functionality
+    // Live Clock
     function updateClock() {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
@@ -442,12 +423,10 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Toggle switch helper
     function toggleSwitch(element) {
       element.classList.toggle('active');
     }
 
-    // Notice notification
     function showNotice(msg) {
       const alertBox = document.createElement('div');
       alertBox.className = 'absolute top-12 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-100 px-4 py-2 text-xs border border-slate-700 shadow-xl z-50 transition-all';
@@ -456,7 +435,6 @@
       setTimeout(() => alertBox.remove(), 2000);
     }
 
-    // App Window Control
     let activeApp = null;
 
     function openApp(appId) {
@@ -475,13 +453,12 @@
       activeApp = null;
     }
 
-    // Swipe Up gesture detection strictly from the bottom indicator line
     const indicatorArea = document.getElementById('indicatorArea');
 
     let startY = 0;
     let currentY = 0;
     let isDragging = false;
-    const swipeThreshold = 50; // Minimum vertical distance required to dismiss app
+    const swipeThreshold = 50;
 
     // Touch Event Handlers
     indicatorArea.addEventListener('touchstart', (e) => {
@@ -497,7 +474,6 @@
       currentY = e.touches[0].clientY;
       let deltaY = startY - currentY;
 
-      // Only drag upward
       if (deltaY > 0) {
         let percentage = (deltaY / window.innerHeight) * 100;
         activeApp.style.transform = `translateY(-${percentage}%)`;
@@ -513,12 +489,11 @@
       if (deltaY > swipeThreshold) {
         closeApp(activeApp);
       } else {
-        // Reset back to open position cleanly without bounce
         activeApp.style.transform = 'translateY(0%)';
       }
     });
 
-    // Mouse Event Handlers (for desktop testing)
+    // Mouse Event Handlers for Desktop Testing
     indicatorArea.addEventListener('mousedown', (e) => {
       if (!activeApp) return;
       startY = e.clientY;
